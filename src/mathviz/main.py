@@ -139,24 +139,101 @@ def main(argv: List[str] | None = None):
         
         print("\n🔍 极值点:")
         cp = critical_points(sym, x_sym)
-        if cp:
-            for pt, typ in cp:
-                print(f"    {pt} ({typ})")
+        # If symbolic solver couldn't solve, try numeric fallback within [xmin,xmax]
+        if cp and isinstance(cp[0][0], str) and "Unable to solve" in cp[0][0]:
+            print("    (符号求解失败，尝试数值搜索...)")
+            try:
+                from .analysis import numeric_critical_points
+                ncp = numeric_critical_points(sym, x_sym, args.xmin, args.xmax, samples=2000)
+                if ncp:
+                    for pt, typ in ncp:
+                        print(f"    {pt:.6g} ({typ})")
+                else:
+                    print("    (数值未找到根)")
+            except Exception as e:
+                print(f"    (数值回退失败: {e})")
         else:
-            print("    (无)")
+            if cp:
+                for pt, typ in cp:
+                    print(f"    {pt} ({typ})")
+            else:
+                print("    (无)")
         
         print("\n📐 拐点:")
         ip = inflection_points(sym, x_sym)
-        if ip:
-            for pt, typ in ip:
-                print(f"    {pt} ({typ})")
+        if ip and isinstance(ip[0][0], str) and "Unable to solve" in ip[0][0]:
+            print("    (符号求解失败，尝试数值搜索...)")
+            try:
+                # use numeric_inflection_points to find f''(x)=0 roots and classify them correctly
+                from .analysis import numeric_inflection_points
+                nips = numeric_inflection_points(sym, x_sym, args.xmin, args.xmax, samples=2000)
+                if nips:
+                    for pt, typ in nips:
+                        print(f"    {pt:.6g} ({typ})")
+                else:
+                    print("    (数值未找到拐点)")
+            except Exception as e:
+                print(f"    (数值回退失败: {e})")
         else:
-            print("    (无)")
+            if ip:
+                for pt, typ in ip:
+                    print(f"    {pt} ({typ})")
+            else:
+                print("    (无)")
 
         # numeric evaluation
         x_num, y_num = _prepare_numeric(sym, x_sym, args.xmin, args.xmax, args.points)
         label = e
-        series.append((x_num, y_num, label))
+        # collect markers for extrema/inflection to annotate the plot
+        local_markers = []
+        # extrema (symbolic or numeric)
+        if cp and isinstance(cp[0][0], str) and "Unable to solve" in cp[0][0]:
+            try:
+                from .analysis import numeric_critical_points
+                ncp = numeric_critical_points(sym, x_sym, args.xmin, args.xmax, samples=2000)
+                for pt, typ in ncp:
+                    # estimate y value
+                    try:
+                        yval = float(sp.lambdify(x_sym, sym, modules=['numpy'])(pt))
+                    except Exception:
+                        yval = 0.0
+                    local_markers.append((pt, yval, 'red', 'o', typ))
+            except Exception:
+                pass
+        else:
+            if cp:
+                for pt, typ in cp:
+                    try:
+                        yval = float(sp.lambdify(x_sym, sym, modules=['numpy'])(float(pt)))
+                    except Exception:
+                        yval = 0.0
+                    local_markers.append((float(pt), yval, 'red', 'o', typ))
+
+        # inflection (symbolic or numeric)
+        if ip and isinstance(ip[0][0], str) and "Unable to solve" in ip[0][0]:
+            try:
+                from .analysis import numeric_inflection_points
+                nips = numeric_inflection_points(sym, x_sym, args.xmin, args.xmax, samples=2000)
+                for pt, typ in nips:
+                    try:
+                        yval = float(sp.lambdify(x_sym, sym, modules=['numpy'])(pt))
+                    except Exception:
+                        yval = 0.0
+                    local_markers.append((pt, yval, 'green', 's', 'inflection'))
+            except Exception:
+                pass
+        else:
+            if ip:
+                for pt, typ in ip:
+                    try:
+                        yval = float(sp.lambdify(x_sym, sym, modules=['numpy'])(float(pt)))
+                    except Exception:
+                        yval = 0.0
+                    # if symbolic inflection detected, label it
+                    label_text = 'inflection' if 'inflection' in str(typ) else typ
+                    local_markers.append((float(pt), yval, 'green', 's', label_text))
+
+        series.append((x_num, y_num, label, local_markers))
 
     print("\n" + "="*70)
     if getattr(args, '3d'):
@@ -174,12 +251,19 @@ def main(argv: List[str] | None = None):
             plot_3d(X, Y, Z, title=f"3D: {label}", savepath=args.save)
         except Exception as e:
             print(f"⚠ 3D 绘图失败: {e}")
-            plot_2d(x, y, title=label, savepath=args.save)
+            # fall back to annotated 2D
+            x, y, lbl, markers = series[0]
+            from .plotter import plot_2d_with_markers
+            plot_2d_with_markers(x, y, markers=markers, title=lbl, savepath=args.save)
     elif len(series) == 1:
-        x, y, _ = series[0]
-        plot_2d(x, y, title=str(series[0][2]), savepath=args.save)
+        x, y, lbl, markers = series[0]
+        from .plotter import plot_2d_with_markers
+        plot_2d_with_markers(x, y, markers=markers, title=str(lbl), savepath=args.save)
     else:
-        plot_multiple_2d(series, title="Comparison", savepath=args.save)
+        # multiple series: call original plot_multiple_2d (no markers support per-series yet)
+        # flatten series to (x,y,label)
+        flat = [(s[0], s[1], s[2]) for s in series]
+        plot_multiple_2d(flat, title="Comparison", savepath=args.save)
 
 
 if __name__ == "__main__":

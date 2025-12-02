@@ -24,6 +24,36 @@ def plot_2d(x: np.ndarray, y: np.ndarray, title: Optional[str] = None, savepath:
         plt.show()
 
 
+def plot_2d_with_markers(x: np.ndarray, y: np.ndarray, markers=None, title: Optional[str] = None, savepath: Optional[str] = None):
+    """Plot 2D function and annotate given markers.
+
+    markers: sequence of tuples (x_val, y_val, color, marker, label)
+    """
+    plt.figure(figsize=(8, 4.5))
+    plt.plot(x, y, lw=2)
+    if markers:
+        for m in markers:
+            try:
+                mx, my = m[0], m[1]
+                color = m[2] if len(m) > 2 else 'red'
+                mk = m[3] if len(m) > 3 else 'o'
+                lbl = m[4] if len(m) > 4 else None
+                plt.scatter([mx], [my], color=color, marker=mk, s=60)
+                if lbl:
+                    plt.annotate(lbl, (mx, my), textcoords="offset points", xytext=(6,6))
+            except Exception:
+                continue
+    plt.xlabel('x')
+    plt.ylabel('f(x)')
+    if title:
+        plt.title(title)
+    plt.grid(True)
+    if savepath:
+        plt.savefig(savepath, dpi=150)
+    else:
+        plt.show()
+
+
 def plot_multiple_2d(series: Sequence[tuple], title: Optional[str] = None, savepath: Optional[str] = None):
     """Plot multiple (x, y, label) series.
 

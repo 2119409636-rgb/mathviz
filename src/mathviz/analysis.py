@@ -111,6 +111,128 @@ def inflection_points(expr: sp.Expr, var: sp.Symbol = None) -> List[Tuple]:
     return results
 
 
+def numeric_critical_points(expr: sp.Expr, var: sp.Symbol, xmin: float, xmax: float, samples: int = 2000) -> List[Tuple]:
+    """Numerically find roots of f'(x) in [xmin, xmax] by sampling and bracketing.
+
+    Returns list of tuples (float_point, classification_string).
+    Requires numpy and scipy if available; falls back to numpy sign-change + linear interpolation.
+    """
+    import numpy as _np
+    try:
+        from scipy.optimize import brentq as _brentq
+    except Exception:
+        _brentq = None
+
+    f1 = sp.lambdify(var, sp.diff(expr, var), modules=["numpy", "mpmath"])
+    f2 = sp.lambdify(var, sp.diff(expr, var, 2), modules=["numpy", "mpmath"])
+
+    xs = _np.linspace(xmin, xmax, samples)
+    ys = _np.array(f1(xs), dtype=float)
+    roots = []
+
+    # find sign changes
+    for i in range(len(xs) - 1):
+        a, b = xs[i], xs[i + 1]
+        ya, yb = ys[i], ys[i + 1]
+        if _np.isnan(ya) or _np.isnan(yb):
+            continue
+        if ya == 0:
+            root = a
+            roots.append(root)
+        elif ya * yb < 0:
+            # bracket found
+            if _brentq is not None:
+                try:
+                    root = _brentq(lambda t: f1(t), a, b)
+                except Exception:
+                    root = (a + b) / 2.0
+            else:
+                # linear interpolation fallback
+                root = a - ya * (b - a) / (yb - ya)
+            roots.append(root)
+
+    # deduplicate (within tolerance)
+    uniq = []
+    for r in roots:
+        if not any(abs(r - u) < 1e-6 for u in uniq):
+            uniq.append(r)
+
+    results = []
+    for r in uniq:
+        try:
+            val2 = float(f2(r))
+            if val2 > 0:
+                typ = "local min"
+            elif val2 < 0:
+                typ = "local max"
+            else:
+                typ = "possible inflection"
+        except Exception:
+            typ = "unknown"
+        results.append((r, typ))
+
+    return results
+
+
+def numeric_inflection_points(expr: sp.Expr, var: sp.Symbol, xmin: float, xmax: float, samples: int = 2000) -> List[Tuple]:
+    """Numerically find inflection points where f''(x)=0 and f'''(x) != 0 in [xmin, xmax].
+
+    Returns list of tuples (float_point, classification_string) where classification is
+    'inflection' or 'possible higher-order' or 'unknown'. Uses scipy brentq if available.
+    """
+    import numpy as _np
+    try:
+        from scipy.optimize import brentq as _brentq
+    except Exception:
+        _brentq = None
+
+    f2_expr = sp.diff(expr, var, 2)
+    f3_expr = sp.diff(expr, var, 3)
+    f2 = sp.lambdify(var, f2_expr, modules=["numpy", "mpmath"])
+    f3 = sp.lambdify(var, f3_expr, modules=["numpy", "mpmath"])
+
+    xs = _np.linspace(xmin, xmax, samples)
+    ys = _np.array(f2(xs), dtype=float)
+    roots = []
+
+    for i in range(len(xs) - 1):
+        a, b = xs[i], xs[i + 1]
+        ya, yb = ys[i], ys[i + 1]
+        if _np.isnan(ya) or _np.isnan(yb):
+            continue
+        if ya == 0:
+            roots.append(a)
+        elif ya * yb < 0:
+            if _brentq is not None:
+                try:
+                    root = _brentq(lambda t: f2(t), a, b)
+                except Exception:
+                    root = (a + b) / 2.0
+            else:
+                root = a - ya * (b - a) / (yb - ya)
+            roots.append(root)
+
+    # deduplicate
+    uniq = []
+    for r in roots:
+        if not any(abs(r - u) < 1e-6 for u in uniq):
+            uniq.append(r)
+
+    results = []
+    for r in uniq:
+        try:
+            val3 = float(f3(r))
+            if val3 != 0:
+                typ = "inflection"
+            else:
+                typ = "possible higher-order"
+        except Exception:
+            typ = "unknown"
+        results.append((r, typ))
+
+    return results
+
+
 def parse_parametric(x_str: str, y_str: str, z_str: str = None) -> Tuple[Callable, Callable, Callable]:
     """Parse parametric equations and return numeric callables.
     
