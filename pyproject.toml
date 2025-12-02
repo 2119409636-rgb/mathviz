@@ -1,0 +1,17 @@
+[project]
+name = "mathviz"
+version = "0.1.0"
+description = "数学函数可视化工具 — Function analysis and visualization"
+authors = [ { name = "Your Name", email = "you@example.com" } ]
+requires-python = ">=3.11,<3.13"
+dependencies = [
+  "numpy>=1.26",
+  "scipy>=1.11",
+  "matplotlib>=3.8",
+  "sympy>=1.12",
+  "plotly>=5.18"
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
