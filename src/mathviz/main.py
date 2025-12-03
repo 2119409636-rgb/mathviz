@@ -238,7 +238,7 @@ def main(argv: List[str] | None = None):
     print("\n" + "="*70)
     if getattr(args, '3d'):
         # 3D plotting for single expression
-        x, y, label = series[0]
+        x, y, label, markers = series[0]  # 修复：改为解包四个值
         # Create 2D grid for surface
         x_grid = np.linspace(args.xmin, args.xmax, 50)
         y_grid = np.linspace(args.xmin, args.xmax, 50)
