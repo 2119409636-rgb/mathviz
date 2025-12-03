@@ -46,7 +46,7 @@ uv run python -m mathviz.main --expr "sin(x)*exp(-x**2)" --xmin -5 --xmax 5
 ```powershell
 uv run python -m mathviz.main --expr "x**2 - 4*x + 3" --xmin -1 --xmax 5
 ```
-
+![绘制单个函数](examplepic/Figure_1.png)
 **输出内容包括：**
 - 📊 符号分析：一阶导数、不定积分、6阶泰勒展开
 - 🔍 极值点：分类为"local min"或"local max"
@@ -58,6 +58,7 @@ uv run python -m mathviz.main --expr "x**2 - 4*x + 3" --xmin -1 --xmax 5
 ```powershell
 uv run python -m mathviz.main --expr "sin(x);cos(x);sin(x)+cos(x)" --xmin -6.28 --xmax 6.28
 ```
+![多函数对比](examplepic/Figure_2.png)
 
 会在同一图表中绘制三条曲线，便于比较。
 
@@ -66,7 +67,7 @@ uv run python -m mathviz.main --expr "sin(x);cos(x);sin(x)+cos(x)" --xmin -6.28 
 ```powershell
 uv run python -m mathviz.main --expr "sin(x)*exp(-x**2)" --xmin -5 --xmax 5 --3d
 ```
-
+![3d表面绘图](examplepic/屏幕截图_3-12-2025_12531_127.0.0.1.jpeg)
 生成交互式 3D 曲面（使用 Plotly）。
 
 ### 复变函数可视化
@@ -78,6 +79,8 @@ uv run python -m mathviz.main --complex "z**2" --xmin -2 --xmax 2 --ymin -2 --ym
 # 相位模式
 uv run python -m mathviz.main --complex "sin(z)" --complex-mode phase --xmin -3 --xmax 3 --ymin -3 --ymax 3
 ```
+![复变函数1](examplepic/Figure_4.png)
+![复变函数2](examplepic/Figure_6.png)
 
 使用颜色映射可视化复函数 f(z)：
 - `magnitude` 模式：用颜色表示 |f(z)|
@@ -92,6 +95,8 @@ uv run python -m mathviz.main --implicit "x**2 + y**2 - 1" --xmin -1.5 --xmax 1.
 # 双曲线：x^2 - y^2 - 1 = 0
 uv run python -m mathviz.main --implicit "x**2 - y**2 - 1" --xmin -3 --xmax 3 --ymin -3 --ymax 3
 ```
+![圆](examplepic/Figure_7.png)
+![双曲线](examplepic/Figure_8.png)
 
 显示隐函数的零等高线。
 
@@ -104,6 +109,8 @@ uv run python -m mathviz.main --parametric-x "cos(t)" --parametric-y "sin(t)" --
 # Lissajous 曲线
 uv run python -m mathviz.main --parametric-x "sin(3*t)" --parametric-y "sin(2*t)" --tmin 0 --tmax "2*pi"
 ```
+![参数圆](examplepic/Figure_9.png)
+![李莎茹](examplepic/Figure_10.png)
 
 ### 参数方程（3D）
 
@@ -114,6 +121,8 @@ uv run python -m mathviz.main --parametric-x "cos(t)" --parametric-y "sin(t)" --
 # Tornado 螺旋
 uv run python -m mathviz.main --parametric-x "t*cos(t)" --parametric-y "t*sin(t)" --parametric-z "0.1*t" --tmin 0 --tmax "10*pi"
 ```
+![螺旋线](examplepic/Figure_11.png)
+![tornado](examplepic/Figure_12.png)
 
 ## 📊 命令行参数参考
 
